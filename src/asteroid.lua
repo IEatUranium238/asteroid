@@ -52,6 +52,7 @@ function template:generate(values, config)
       error("Can't override settings for this generator!\nUse allow_override on template creator to allow overriding", 2)
     end
 
+    -- Merge generator's configuration
     local copy = self.params
 
     for k, v in pairs(config) do
@@ -72,6 +73,7 @@ function template:generate(values, config)
       local val_name = item.data
       local val_value = values[val_name]
 
+      -- Check if undefined
       if (val_value == nil) then
         if (config.allow_undefined == false) then
           error(
@@ -81,6 +83,7 @@ function template:generate(values, config)
             2)
         end
 
+        -- Search in specific values first
         if (config.default_values[val_name] ~= nil) then
           val_value = config.default_values[val_name]
         else
@@ -88,6 +91,7 @@ function template:generate(values, config)
         end
       end
 
+      -- Use escaper if defined
       if (config.escaper ~= nil) then
         val_value = config.escaper(val_value)
       end
@@ -157,7 +161,6 @@ function m.make_template(in_string, in_params)
   end
 
   local generatedObj = template:new(data, in_params)
-
   return generatedObj
 end
 
