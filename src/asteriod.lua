@@ -1,23 +1,39 @@
 local m = {}
 
+--- @class Template_Params
+--- @field allow_undefined boolean | nil
+--- @field allow_override boolean | nil
+--- @field default any
+--- @field default_values table | nil
+--- @field escaper nil | function
 local default_params = {
   allow_undefined = false,
-  default = nil,
-  escaper = nil
+  allow_override = false,
+  default = "nil",
+  default_values = {},
+  escaper = nil,
 }
 
 --- @class Template
+--- @field params table
+--- @field data table
 local template = {}
 
 --- Make a new template object
 --- @param in_data table parsed template data
---- @param in_params? table default parameters for generators
+--- @param in_params? Template_Params default parameters for generators
 --- @return Template template template object
 function template:new(in_data, in_params)
   local obj = {
     data = in_data,
-    params = in_params
+    params = default_params
   }
+
+  if (in_params ~= nil) then
+    for k, v in pairs(in_params) do
+      obj.params[k] = v
+    end
+  end
 
   setmetatable(obj, self)
   self.__index = self
@@ -25,14 +41,67 @@ function template:new(in_data, in_params)
   return obj
 end
 
--- TODO: add logic
-function template:generate()
-  return "hi"
+--- Generate templated result string of the template
+--- @param values table values to template with
+--- @param config? Template_Params parameters for this generator
+--- @return string result result string
+function template:generate(values, config)
+  -- Configuration
+  if (config ~= nil) then
+    if (self.params.allow_override == false) then
+      error("Can't override settings for this generator!\nUse allow_override on template creator to allow overriding", 2)
+    end
+
+    local copy = self.params
+
+    for k, v in pairs(config) do
+      copy[k] = v
+    end
+
+    config = copy
+  else
+    config = self.params
+  end
+
+  local res = ""
+
+  for _, item in pairs(self.data) do
+    if (item.type == "text") then
+      res = res .. item.data
+    else
+      local val_name = item.data
+      local val_value = values[val_name]
+
+      if (val_value == nil) then
+        if (config.allow_undefined == false) then
+          error(
+            "Value '" ..
+            val_name ..
+            "' is undefined (nil)!\nSet allow_undefined to use default or specific default for this value from default_values.",
+            2)
+        end
+
+        if (config.default_values[val_name] ~= nil) then
+          val_value = config.default_values[val_name]
+        else
+          val_value = config.default
+        end
+      end
+
+      if (config.escaper ~= nil) then
+        val_value = config.escaper(val_value)
+      end
+
+      res = res .. val_value
+    end
+  end
+
+  return res
 end
 
 --- Make a new Asteroid template
 --- @param in_string string string to template
---- @param in_params? table default parameters for generators
+--- @param in_params? Template_Params default parameters for generators
 --- @return Template template Asteroid template object
 function m.make_template(in_string, in_params)
   in_string = in_string:gsub("^%s*(.-)%s*$", "%1")
@@ -68,7 +137,12 @@ function m.make_template(in_string, in_params)
       end
 
       value_mode = false
-      buffer = ""
+
+      if (c == " ") then
+        buffer = " "
+      else
+        buffer = ""
+      end
     else
       buffer = buffer .. c
     end
