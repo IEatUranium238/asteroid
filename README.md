@@ -2,7 +2,7 @@
 
 Stupidly simple templating for Lua strings.
 
-Asteroid simplifies string templating by using simple template syntax instead of `string.fomrat` or concatenation. Designed for [Silvermoon](https://silvermoon.up.railway.app) HTML preprocessor, but it can be used in any Lua project.
+Asteroid simplifies string templating by using simple template syntax instead of `string.format` or concatenation. Designed for [Silvermoon](https://silvermoon.up.railway.app) HTML preprocessor, but it can be used in any Lua project.
 
 ## How to use
 
